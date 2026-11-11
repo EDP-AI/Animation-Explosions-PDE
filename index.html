@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animation interactive — Explosion des systèmes paraboliques</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,system-ui,sans-serif;background:#07111d;color:#edf6ff}
+.app{display:grid;grid-template-columns:400px minmax(0,1fr);height:100vh;min-height:0;overflow:hidden}
+.panel{padding:16px;background:#0d1928;border-right:1px solid #294057;overflow-y:auto;overflow-x:hidden;min-height:0;scrollbar-width:thin}
+h1{font-size:19px;margin:0 0 8px}
+h2{font-size:14px;color:#bcd8f5;margin:18px 0 8px}
+.note{font-size:12px;line-height:1.45;color:#aebfd2}
+select,button,input[type=number]{background:#111f31;color:#eef7ff;border:1px solid #3a5672;border-radius:7px}
+select,button{width:100%;padding:8px}
+button{cursor:pointer;margin-top:7px}
+.param{margin:10px 0 15px}
+.head{display:grid;grid-template-columns:1fr 92px;gap:7px;align-items:center;margin-bottom:5px}
+label{font-size:12px}
+input[type=number]{width:100%;padding:5px 6px;font-weight:700}
+input[type=range]{width:100%}
+.metrics,.result{background:#091522;border:1px solid #294057;border-radius:8px;padding:9px;margin-top:8px;font-size:11px;line-height:1.5}
+.result.on{border-color:#4e966d;background:#0d2419}
+.hot{color:#ffd38b;font-weight:700}
+.bad{color:#ffaaa8}
+.good{color:#91e6a9}
+.stage{position:relative;height:100%;min-height:0;overflow:hidden;background:radial-gradient(circle at 50% 45%,#18304b 0%,#08121f 58%,#040a11 100%)}
+canvas{display:block;width:100%;height:100%}
+.big{position:absolute;top:58px;left:50%;transform:translateX(-50%);width:max-content;max-width:85%;text-align:center;padding:10px 16px;border:1px solid #587693;border-radius:12px;background:rgba(5,13,23,.88);font-weight:800;font-size:16px;color:#ffd98e;pointer-events:none}
+.badge{position:absolute;left:16px;top:15px;padding:7px 10px;border:1px solid #304a64;border-radius:8px;background:rgba(5,12,21,.8);font-size:11px}
+.legend{position:absolute;right:15px;bottom:15px;padding:8px 10px;border:1px solid #304a64;border-radius:8px;background:rgba(5,12,21,.8);font-size:10px;color:#c9d8e8}
+@media(max-width:850px){
+ .app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:44vh 56vh;height:100vh;min-height:0;overflow:hidden}
+ .panel{border-right:0;border-bottom:1px solid #294057;min-height:0;overflow-y:auto}
+ .stage{height:100%;min-height:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<section class="panel">
+<h1>🔥 Explosion des systèmes paraboliques</h1>
+<div class="note">
+Le moteur applique directement les hypothèses mathématiques des lemmes 3.4.5–3.4.9 et du théorème 3.4.10, puis du Théorème 4.4.2.
+</div>
+
+<h2>Configuration</h2>
+<select id="chapter">
+<option value="3">Chapitre 3</option>
+<option value="4">Chapitre 4</option>
+</select>
+<div style="margin-top:8px">
+<label>Nombre de composantes n</label>
+<select id="n"></select>
+</div>
+
+<button id="reset">Réinitialiser</button>
+
+<div class="metrics" style="margin-top:10px">
+  <b>Rotation du système</b>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px">
+    <button id="rotationBtn">⏸ Rotation OFF</button>
+    <button id="rotationReset">↻ Réinitialiser l’angle</button>
+  </div>
+  <div style="margin-top:8px">
+    <label for="speed">Vitesse de rotation</label>
+    <input id="speed" type="range" min="0" max="10" step="0.1" value="1" style="width:100%">
+    <div id="speedValue" style="font-size:11px;color:#bcd8f5;margin-top:3px">1×</div>
+  </div>
+</div>
+
+<h2>Paramètres p<sub>j</sub></h2>
+<div id="pBox"></div>
+<div id="qSection">
+<h2>Paramètres q<sub>j</sub></h2>
+<div id="qBox"></div>
+</div>
+
+<div class="metrics" id="metrics"></div>
+<div id="results"></div>
+</section>
+
+<main class="stage">
+<canvas id="canvas"></canvas>
+<div class="badge" id="status">Aucun critère actif</div>
+<div class="big" id="big">Aucun régime d’explosion détecté</div>
+
+</main>
+</div>
+
+<script>
+"use strict";
+
+const S={
+ n:5, chapter:3,
+ p:[], q:[],
+ active:new Set(),
+ angle:0, rotate:false,
+ speed:1,
+ rafStarted:false
+};
+
+const $=id=>document.getElementById(id);
+const fmt=x=>Number.isFinite(x)?x.toFixed(4):"indéfini";
+const prod=a=>a.reduce((r,x)=>r*x,1);
+
+function defaults(){
+ S.p=Array.from({length:S.n},(_,i)=>S.chapter===4?(i===S.n-1?1.2:0.8):(i===S.n-1?1.8:0.7));
+ S.q=Array.from({length:S.n},()=>1);
+ buildInputs();
+ evaluate();
+}
+
+function addInput(box,kind,i){
+ const d=document.createElement("div");
+ d.className="param";
+
+ const h=document.createElement("div");
+ h.className="head";
+
+ const lab=document.createElement("label");
+ const digits=String(i+1).replace(/0/g,"₀").replace(/1/g,"₁").replace(/2/g,"₂").replace(/3/g,"₃").replace(/4/g,"₄").replace(/5/g,"₅").replace(/6/g,"₆").replace(/7/g,"₇").replace(/8/g,"₈").replace(/9/g,"₉");
+   lab.textContent=kind+digits;
+
+ const num=document.createElement("input");
+ num.type="number";
+ num.min="0"; num.max="4"; num.step="0.05";
+ num.value=S[kind][i].toFixed(2);
+
+ const range=document.createElement("input");
+ range.type="range";
+ range.min="0"; range.max="4"; range.step="0.05";
+ range.value=S[kind][i];
+
+ function setValue(v,round=false){
+   if(!Number.isFinite(v)) return;
+   if(round) v=Math.round(v/0.05)*0.05;
+   v=Math.max(0,Math.min(4,v));
+   S[kind][i]=v;
+   range.value=v;
+   num.value=v.toFixed(2);
+   evaluate();
+ }
+
+ range.oninput=()=>setValue(Number(range.value),false);
+ num.oninput=()=>{
+   // La saisie reste libre pendant la frappe.
+   // On ne modifie pas la valeur saisie tant qu'elle n'est pas un nombre valide.
+   const raw=num.value.trim();
+   if(raw==="" || raw==="-" || raw==="." || raw==="-.") return;
+   const v=Number(raw);
+   if(Number.isFinite(v) && v>=0 && v<=4){
+     S[kind][i]=v;
+     range.value=v;
+     evaluate();
+   }
+ };
+ num.onchange=()=>{
+   let v=Number(num.value);
+   if(!Number.isFinite(v)) v=S[kind][i];
+   v=Math.max(0,Math.min(4,v));
+   S[kind][i]=v;
+   range.value=v;
+   num.value=v.toFixed(2);
+   evaluate();
+ };
+ num.onkeydown=e=>{
+   if(e.key==="Enter"){
+     num.dispatchEvent(new Event("change"));
+     num.blur();
+   }
+ };
+
+ h.append(lab,num);
+ d.append(h,range);
+ box.appendChild(d);
+}
+
+function buildInputs(){
+ $("pBox").innerHTML="";
+ $("qBox").innerHTML="";
+ for(let i=0;i<S.n;i++) addInput($("pBox"),"p",i);
+ for(let i=0;i<S.n;i++) addInput($("qBox"),"q",i);
+ $("qSection").style.display=S.chapter===3?"block":"none";
+}
+
+function betaChain(){
+ const b=Array(S.n).fill(NaN);
+ const pn=S.p[S.n-1];
+ if(pn!==1) b[S.n-1]=1/(pn-1);
+ for(let i=S.n-2;i>=0;i--){
+   if(S.p[i]!==1 && Number.isFinite(b[i+1]))
+     b[i]=(1-S.q[i+1]*b[i+1])/(S.p[i]-1);
+ }
+ return b;
+}
+
+function evalC3(){
+ const n=S.n,p=S.p,q=S.q,b=betaChain();
+ const active=new Set(), R=[];
+
+ // Lemme 3.4.5
+ let l1=p[n-1]>1;
+ for(let i=0;i<n-1;i++) l1=l1 && p[i]<=1;
+ const bn=1/(p[n-1]-1);
+ l1=l1 && q[n-1]*bn<1;
+ if(l1){
+   active.add(n-1);
+   R.push(["Lemme 3.4.5",true,
+     `p₁,…,pₙ₋₁≤1, pₙ>1 ; βₙ=${fmt(bn)} ; qₙβₙ=${fmt(q[n-1]*bn)}<1 → explosion de uₙ.`]);
+ }else R.push(["Lemme 3.4.5",false,"Hypothèses non satisfaites."]);
+
+ // Lemme 3.4.6
+ let l2=true;
+ for(let i=0;i<n-2;i++) l2=l2 && p[i]<=1;
+ l2=l2 && p[n-2]<1 && p[n-1]>1;
+ const bm1=(1-q[n-1]*bn)/(p[n-2]-1);
+ l2=l2 && bm1>0 && 1-q[n-2]*bm1>0;
+ if(l2){
+   active.add(n-2); active.add(n-1);
+   R.push(["Lemme 3.4.6",true,`βₙ₋₁=${fmt(bm1)} et 1−qₙ₋₁βₙ₋₁>0 → explosion de uₙ₋₁,u${n}.`]);
+ }else R.push(["Lemme 3.4.6",false,"Hypothèses non satisfaites."]);
+
+ // Lemme 3.4.7
+ let l3=p[n-1]>1;
+ for(let i=0;i<n-1;i++) l3=l3 && p[i]<=1;
+ l3=l3 && b[0]>=0;
+ for(let i=1;i<n-1;i++) l3=l3 && b[i]>0;
+ if(l3){
+   for(let i=0;i<n;i++) active.add(i);
+   R.push(["Lemme 3.4.7",true,"La chaîne récursive des β satisfait les signes requis → explosion simultanée de toutes les composantes."]);
+ }else R.push(["Lemme 3.4.7",false,"Hypothèses non satisfaites."]);
+
+ // Lemme 3.4.8
+ let l4=true;
+ for(let i=0;i<n-2;i++) l4=l4 && p[i]<=1;
+ const beta_nm1=1/(p[n-2]-1);
+ l4=l4 && p[n-2]>1 && 1<p[n-1] && p[n-1]<=q[n-1]+1;
+ l4=l4 && q[n-2]*beta_nm1<1;
+ if(l4){
+   active.add(n-2);
+   R.push(["Lemme 3.4.8",true,`βₙ₋₁=${fmt(beta_nm1)} et qₙ₋₁βₙ₋₁<1 → explosion de uₙ₋₁.`]);
+ }else R.push(["Lemme 3.4.8",false,"Hypothèses non satisfaites."]);
+
+ // Lemme 3.4.9
+ let l5=true;
+ for(let i=0;i<n-3;i++) l5=l5 && p[i]<=1;
+ const beta_nm2=(1-q[n-2]*beta_nm1)/(p[n-3]-1);
+ l5=l5 && p[n-3]<1 && p[n-2]>1 && 1<p[n-1] && p[n-1]<=q[n-1]+1;
+ l5=l5 && beta_nm2>0 && q[n-3]*beta_nm2<1;
+ if(l5){
+   active.add(n-3); active.add(n-2);
+   R.push(["Lemme 3.4.9",true,`βₙ₋₂=${fmt(beta_nm2)} et qₙ₋₂βₙ₋₂<1 → explosion de uₙ₋₂,uₙ₋₁.`]);
+ }else R.push(["Lemme 3.4.9",false,"Hypothèses non satisfaites."]);
+
+ // Théorème 3.4.10
+ const qp=prod(q), rp=prod(p.map(x=>1-x));
+ let l6=p.every(x=>x<=1) && qp>rp;
+ if(l6){
+   for(let i=0;i<n;i++) active.add(i);
+   R.push(["Théorème 3.4.10",true,`∏q=${fmt(qp)} > ∏(1−p)=${fmt(rp)} → explosion simultanée de toutes les composantes.`]);
+ }else R.push(["Théorème 3.4.10",false,`∏q=${fmt(qp)}, ∏(1−p)=${fmt(rp)}.`]);
+
+ return {active,b,R};
+}
+
+function evalC4(){
+ const P=prod(S.p),active=new Set(),R=[];
+ const on=P>1;
+ if(on) for(let i=0;i<S.n;i++) active.add(i);
+ R.push(["Théorème 4.4.2",on,`∏p=${fmt(P)} ${on?">":"≤"} 1 → ${on?"explosion simultanée de toutes les composantes.":"aucune explosion prédite par ce théorème."}`]);
+ return {active,b:[],R};
+}
+
+function evaluate(){
+ const r=S.chapter===3?evalC3():evalC4();
+ S.active=r.active;
+
+ $("status").textContent=r.active.size
+   ? `🔥 ${r.active.size} composante(s) en explosion`
+   : "Aucun critère actif";
+
+ $("big").textContent=r.active.size
+   ? `🔥 Explosion détectée : ${[...r.active].sort((a,b)=>a-b).map(i=>"u"+String(i+1).replace(/0/g,"₀").replace(/1/g,"₁").replace(/2/g,"₂").replace(/3/g,"₃").replace(/4/g,"₄").replace(/5/g,"₅").replace(/6/g,"₆").replace(/7/g,"₇").replace(/8/g,"₈").replace(/9/g,"₉")).join(", ")}`
+   : "Aucun régime d’explosion détecté";
+
+ let m="";
+ if(S.chapter===3){
+   m+="<b>β :</b><div style='display:flex;flex-wrap:wrap;gap:4px;margin-top:5px'>";
+   r.b.forEach((x,i)=>m+=`<span style="padding:3px 6px;background:#1b2a3b;border-radius:99px">β${i+1}=${fmt(x)}</span>`);
+   m+="</div>";
+   m+=`<div style="margin-top:7px"><b>∏q</b> = ${fmt(prod(S.q))} &nbsp;&nbsp; <b>∏(1−p)</b> = ${fmt(prod(S.p.map(x=>1-x)))}</div>`;
+ }else{
+   m=`<b>∏p</b> = ${fmt(prod(S.p))}`;
+ }
+ $("metrics").innerHTML=m;
+
+ $("results").innerHTML=r.R.map(x=>
+   `<div class="result ${x[1]?"on":""}">
+      <b class="${x[1]?"good":"bad"}">${x[1]?"✓":"✗"} ${x[0]}</b><br>${x[2]}
+    </div>`
+ ).join("");
+}
+
+// ----------------------
+// Rendu graphique
+// ----------------------
+const cv=$("canvas"),ctx=cv.getContext("2d");
+
+function resize(){
+ const dpr=Math.max(1,window.devicePixelRatio||1);
+ cv.width=Math.floor(cv.clientWidth*dpr);
+ cv.height=Math.floor(cv.clientHeight*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize",resize);
+
+function project(x,y,z,W,H){
+ const cy=Math.cos(S.angle),sy=Math.sin(S.angle);
+ const X=x*cy-z*sy;
+ const Z=x*sy+z*cy;
+ const camera=900;
+ const k=camera/(camera+Z);
+ return [W/2+X*k,H/2+y*k,k];
+}
+
+function drawFlameShape(X,Y,s,opacity=1,mirror=false){
+ ctx.save();
+ ctx.translate(X,Y);
+ ctx.scale(s,mirror?-s:s);
+ ctx.globalAlpha=opacity;
+ ctx.globalCompositeOperation="lighter";
+
+ const halo=ctx.createRadialGradient(0,0,2,0,0,28);
+ halo.addColorStop(0,"rgba(255,245,190,.95)");
+ halo.addColorStop(.28,"rgba(255,190,70,.8)");
+ halo.addColorStop(.7,"rgba(255,75,20,.35)");
+ halo.addColorStop(1,"rgba(255,30,0,0)");
+ ctx.fillStyle=halo;
+ ctx.beginPath();ctx.arc(0,0,28,0,Math.PI*2);ctx.fill();
+
+ const g=ctx.createLinearGradient(0,22,0,-34);
+ g.addColorStop(0,"rgba(255,235,120,.98)");
+ g.addColorStop(.3,"rgba(255,130,35,.96)");
+ g.addColorStop(.7,"rgba(255,55,12,.82)");
+ g.addColorStop(1,"rgba(255,20,0,0)");
+ ctx.fillStyle=g;
+ ctx.shadowBlur=22;
+ ctx.shadowColor="rgba(255,100,20,.95)";
+ ctx.beginPath();
+ ctx.moveTo(0,22);
+ ctx.bezierCurveTo(-17,12,-15,0,-7,-10);
+ ctx.bezierCurveTo(-3,-16,-3,-27,2,-35);
+ ctx.bezierCurveTo(8,-25,14,-17,10,-9);
+ ctx.bezierCurveTo(18,0,15,13,0,22);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.shadowBlur=0;
+ ctx.fillStyle="rgba(255,248,205,.95)";
+ ctx.beginPath();
+ ctx.moveTo(0,13);
+ ctx.bezierCurveTo(-8,5,-6,-2,-2,-8);
+ ctx.bezierCurveTo(1,-13,2,-18,4,-22);
+ ctx.bezierCurveTo(8,-12,10,-5,6,0);
+ ctx.bezierCurveTo(9,6,5,11,0,13);
+ ctx.closePath();
+ ctx.fill();
+ ctx.restore();
+}
+
+function drawFlame(x,y,z,scale,W,H,t){
+ const [X,Y,k]=project(x,y,z,W,H);
+ const s=scale*k*(1+0.08*Math.sin(t/90+x));
+ drawFlameShape(X,Y,s,1,false);
+}
+
+function drawReflectedFlame(x,y,z,scale,W,H,t,mirrorY){
+ const [X,Y,k]=project(x,y,z,W,H);
+ const s=scale*k*(1+0.08*Math.sin(t/90+x));
+ drawFlameShape(X,2*mirrorY-Y,s,.16,true);
+}
+
+function frame(t){
+ const W=cv.clientWidth,H=cv.clientHeight;
+ ctx.clearRect(0,0,W,H);
+
+ const R=Math.min(W,H)*0.27;
+ const L=Math.min(W,H)*0.14;
+
+ // guide circle
+ ctx.strokeStyle="rgba(140,180,220,.18)";
+ ctx.lineWidth=1;
+ ctx.beginPath();
+ for(let j=0;j<=160;j++){
+   const a=2*Math.PI*j/160;
+   const p=project(R*Math.cos(a),0,R*Math.sin(a),W,H);
+   if(j===0)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);
+ }
+ ctx.stroke();
+
+
+  // Sol / miroir horizontal. Les reflets sont volontairement discrets.
+  const mirrorY=Math.min(H-22,H*0.68);
+  const floorGrad=ctx.createLinearGradient(0,mirrorY-5,0,mirrorY+10);
+  floorGrad.addColorStop(0,"rgba(190,220,245,.20)");
+  floorGrad.addColorStop(1,"rgba(90,130,165,0)");
+  ctx.fillStyle=floorGrad;
+  ctx.fillRect(0,mirrorY-5,W,15);
+  ctx.strokeStyle="rgba(180,215,240,.24)";
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(0,mirrorY);ctx.lineTo(W,mirrorY);ctx.stroke();
+
+  // Reflets des barres et des flammes.
+  for(let i=0;i<S.n;i++){
+    const a=2*Math.PI*i/S.n;
+    const x=R*Math.cos(a),z=R*Math.sin(a),y=0;
+    const A=project(x,y-L,z,W,H),B=project(x,y+L,z,W,H);
+    const hot=S.active.has(i);
+    const Ar=[A[0],2*mirrorY-A[1]],Br=[B[0],2*mirrorY-B[1]];
+
+    ctx.save();
+    ctx.globalAlpha=.18;
+    ctx.lineWidth=Math.max(6,10*Math.min(A[2],B[2]));
+    if(hot){
+      ctx.strokeStyle="#ef9850";
+    }else{
+      const thermal=ctx.createLinearGradient(Ar[0],Ar[1],Br[0],Br[1]);
+      thermal.addColorStop(0,"#1248e8");
+      thermal.addColorStop(.33,"#00c98a");
+      thermal.addColorStop(.66,"#ffe500");
+      thermal.addColorStop(1,"#e60000");
+      ctx.strokeStyle=thermal;
+    }
+    ctx.beginPath();
+    ctx.moveTo(Ar[0],Ar[1]);ctx.lineTo(Br[0],Br[1]);ctx.stroke();
+    ctx.restore();
+
+    if(hot){
+      drawReflectedFlame(x,y-L,z,1.0,W,H,t,mirrorY);
+      drawReflectedFlame(x,y+L,z,1.0,W,H,t,mirrorY);
+    }
+  }
+
+ for(let i=0;i<S.n;i++){
+   const a=2*Math.PI*i/S.n;
+   const x=R*Math.cos(a),z=R*Math.sin(a);
+   // Toutes les barres sont parallèles au même axe et centrées sur le même plan.
+   // Leur position dépend uniquement de l'angle a : elles restent sur un cercle,
+   // quel que soit n (y compris n=30).
+   const y=0;
+
+   const A=project(x,y-L,z,W,H);
+   const B=project(x,y+L,z,W,H);
+   const hot=S.active.has(i);
+
+   ctx.lineWidth=Math.max(6,10*Math.min(A[2],B[2]));
+   // Les barres explosives conservent exactement leur rendu actuel.
+   // Les barres non explosives reprennent le dégradé thermique de la figure primitive.
+   if(hot){
+     ctx.strokeStyle="#ef9850";
+   }else{
+     const thermal=ctx.createLinearGradient(A[0],A[1],B[0],B[1]);
+     thermal.addColorStop(0,"#e60000");    // rouge en haut
+     thermal.addColorStop(.33,"#ffe500");  // jaune
+     thermal.addColorStop(.66,"#00c98a"); // vert
+     thermal.addColorStop(1,"#1248e8");   // bleu en bas
+     ctx.strokeStyle=thermal;
+   }
+   ctx.shadowBlur=hot?18:3;
+   ctx.shadowColor=hot?"rgba(255,100,20,.85)":"rgba(80,140,190,.25)";
+   ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(B[0],B[1]);ctx.stroke();
+   ctx.shadowBlur=0;
+
+   ctx.fillStyle=hot?"#ffe0a0":"#e0ecf8";
+   ctx.font="bold 13px Arial";
+   ctx.textAlign="center";
+   ctx.fillText("u"+(i+1),(A[0]+B[0])/2+18,(A[1]+B[1])/2);
+
+   if(hot){
+     drawFlame(x,y-L,z,1.0,W,H,t);
+     drawFlame(x,y+L,z,1.0,W,H,t);
+   }
+ }
+
+ if(S.rotate)S.angle+=0.0012*S.speed;
+ if(!S.rafStarted){S.rafStarted=true;}
+ requestAnimationFrame(frame);
+}
+
+function updateRotationButton(){
+  $("rotationBtn").textContent = S.rotate ? "⏸ Arrêter la rotation" : "▶ Démarrer la rotation";
+  $("rotationBtn").setAttribute("aria-pressed", S.rotate ? "true" : "false");
+}
+
+$("rotationBtn").onclick=()=>{
+  S.rotate=!S.rotate;
+  updateRotationButton();
+};
+
+$("rotationReset").onclick=()=>{
+  S.angle=0;
+};
+
+$("speed").oninput=e=>{
+  S.speed=Number(e.target.value);
+  const labels=["Arrêt","0.5×","1×","1.5×","2×","2.5×","3×","4×","5×","7.5×","10×"];
+  $("speedValue").textContent=(S.speed===0?"0× (arrêt)":S.speed.toFixed(1)+"×");
+};
+
+$("chapter").onchange=e=>{S.chapter=Number(e.target.value);defaults()};
+$("n").onchange=e=>{S.n=Number(e.target.value);defaults()};
+$("reset").onclick=defaults;
+
+
+for(let n=2;n<=30;n++){
+ const o=document.createElement("option");
+ o.value=n;o.textContent=n;
+ $("n").appendChild(o);
+}
+$("n").value=String(S.n);
+
+defaults();
+updateRotationButton();
+$("speedValue").textContent="1.0×";
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
