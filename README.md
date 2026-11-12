@@ -23,9 +23,10 @@ Utilisation scientifique
 Cette animation est destinée à la visualisation et à l'exploration numérique des résultats présentés dans le travail de recherche associé.
 Toute utilisation ou adaptation substantielle du code dans un travail scientifique est priée de mentionner la source de ce dépôt ainsi que la référence scientifique associée.
 
-Citation
+Référence scientifique associée
 
-La référence bibliographique définitive du dépôt sera indiquée après son archivage et l'attribution d'un DOI.
+Cette animation accompagne les résultats présentés dans [référence de mes articles]. Le code source et l'animation sont mis à disposition pour faciliter la visualisation et la reproductibilité des résultats numériques.
+
 
 Auteur
 
