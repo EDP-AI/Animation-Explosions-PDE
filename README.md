@@ -3,7 +3,7 @@ Animation interactive — Chapitres 3 et 4
 Description
 
 Ce dépôt contient le code source de l'animation interactive développée pour accompagner la visualisation des résultats théoriques et numériques présentés dans les Chapitres 3 et 4 de mon travail de recherche.
-L'animation permet notamment d'explorer différentes configurations d'un système de n équations de la chaleur couplées et de visualiser les scénarios d'explosion des composantes prédits par les résultats théoriques.
+L'animation permet notamment d'explorer différentes configurations d'un système de n équations de la chaleur couplées et de visualiser les scénarios d'explosion des composantes prédits par les résultats théoriques.
 
 Accès à l'animation
 
