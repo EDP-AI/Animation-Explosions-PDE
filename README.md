@@ -95,9 +95,9 @@ Cette version correspond à la version publiée de l'animation interactive.
 
 Le dépôt pourra être mis à jour ultérieurement afin d'intégrer :
 
-- de nouvelles versions de l'animation ;
-- des améliorations de l'interface ;
-- des extensions aux résultats théoriques ;
+- de nouvelles versions de l'animation;
+- des améliorations de l'interface;
+- des extensions aux résultats théoriques;
 - des programmes numériques associés aux travaux de recherche.
 
 ---
