@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software or the associated interactive animation in your research, please cite this repository and the associated scientific works."
+type: software
+title: "Interactive Animation — Explosions in Coupled Heat Equation Systems"
+authors:
+  - family-names: "KONÉ"
+    given-names: "ZANA LEKPORO"
+repository-code: "https://github.com/edp-ai/Animation-Explosions-PDE"
+url: "https://edp-ai.github.io/Animation-Explosions-PDE/"
+version: "1.0"
+date-released: 2026-11-12
+keywords:
+  - "heat equations"
+  - "blow-up"
+  - "coupled systems"
+  - "nonlinear boundary conditions"
+  - "numerical analysis"
+  - "interactive visualization"
