@@ -1,103 +1,63 @@
-# Animation interactive — Explosions dans les systèmes d'équations de la chaleur
+# 🔥 Interactive Visualization of Blow-Up in Parabolic Systems
 
-# Présentation
+This repository contains an interactive web application developed to illustrate the mathematical results presented in Chapters 3 and 4 of the PhD thesis.
 
-Ce dépôt contient le code source de l'animation interactive développée pour accompagner la visualisation des résultats théoriques et numériques relatifs aux phénomènes d'explosion dans des systèmes de n équations de la chaleur couplées.
+The application provides a visual representation of blow-up phenomena in coupled parabolic systems with nonlinear boundary conditions.
 
-L'animation permet d'explorer différentes configurations du système et de visualiser les scénarios d'explosion prédits par les résultats théoriques étudiés dans les Chapitres 3 et 4.
+# 📖 Description
 
-# Accès à l'animation
+The application implements the algebraic criteria established in the mathematical analysis of Chapters 3 and 4.
 
-L'animation interactive est disponible en ligne à l'adresse suivante :
+It allows users to explore different configurations of the system by varying the number of components n and the nonlinear exponents p_j and q_j.
 
-https://edp-ai.github.io/Animation-Explosions-PDE/
+The visualization dynamically represents the predicted behavior of the components, distinguishing between components associated with blow-up and those that remain bounded, according to the criteria implemented in the application.
 
-# Fonctionnalités principales
+# 🚀 How to use
 
-L'interface permet notamment de :
+1. Open the "live application" (https://edp-ai.github.io/Animation-Explosions-PDE/).
+2. Select the desired chapter (Chapter 3 or Chapter 4).
+3. Choose the number of components n.
+4. Adjust the nonlinear exponents p_j and q_j using the available controls.
+5. Observe the resulting interactive visualization.
 
-- choisir le chapitre étudié ;
-- choisir le nombre de composantes $n$ ;
-- modifier les paramètres $p_j$ et $q_j$ ;
-- visualiser les composantes susceptibles d'exploser ;
-- explorer les différentes configurations du système ;
-- visualiser graphiquement les scénarios d'explosion simultanée ou non simultanée.
+The 3D representation provides an intuitive visual interpretation of the predicted blow-up behavior: components associated with blow-up are represented by a fire effect, whereas bounded components remain visually unaltered.
 
-# Organisation du dépôt
+# 🧮 Mathematical background
 
-Le fichier principal de l'application est :
+The visualization is based on the mathematical criteria established in the corresponding chapters of the thesis:
 
-"index.html"
+- Chapter 3: blow-up criteria for coupled systems with self-interaction and cyclic coupling.
+- Chapter 4: blow-up criteria for the corresponding simplified systems without self-interaction.
 
-Il contient l'implémentation de l'interface interactive ainsi que les calculs nécessaires à la visualisation des résultats théoriques.
+The application is intended to provide an intuitive visualization of these mathematical results and their dependence on the system parameters.
 
-# Références scientifiques associées
+Note: This application is intended for scientific visualization and pedagogical purposes. It does not replace the analytical results, mathematical proofs, or numerical computations presented in the corresponding research work.
 
-Cette animation est associée aux travaux scientifiques relatifs aux systèmes d'équations de la chaleur étudiés dans les Chapitres 3 et 4.
+# 🛠️ Technical details
 
-# Article 1
+- Built with HTML5, CSS3, and JavaScript.
+- Uses the HTML5 Canvas API for interactive visualization.
+- No installation or external runtime environment is required.
+- Runs directly in modern web browsers on desktop and mobile devices.
+- The application is available online through GitHub Pages.
 
-[À REMPLACER — Référence bibliographique complète de l'article 1]
+# 🌐 Online application
 
-Lien : [À AJOUTER]
+The interactive visualization is available at:
 
-# Article 2
+"Open the interactive application" (https://edp-ai.github.io/Animation-Explosions-PDE/)
 
-[À REMPLACER — Référence bibliographique complète de l'article 2]
+# 📝 Citation
 
-Lien : [À AJOUTER]
+If you use this visualization in scientific work, please cite the corresponding PhD thesis and, when appropriate, the software repository.
 
-# Article 3
+Citation metadata are provided in the repository through the "CITATION.cff" file.
 
-[À REMPLACER — Référence bibliographique complète de l'article 3]
+# Author
+Koné Zana Lekporo 
 
-Lien : [À AJOUTER]
+# 📄 License
 
-# Article 4
+This project is distributed under the MIT License.
 
-[À REMPLACER — Référence bibliographique complète de l'article 4]
-
-Lien : [À AJOUTER]
-
-# Article 5
-
-[À REMPLACER — Référence bibliographique complète de l'article 5]
-
-Lien : [À AJOUTER]
-
-# Document de référence — HAL
-
-Le document de recherche contenant notamment les développements et résultats présentés dans les Chapitres 3 et 4 sera prochainement déposé dans HAL.
-
-[À REMPLACER — Référence ou identifiant HAL du document]
-
-Lien HAL : [À AJOUTER]
-
-Ce dépôt HAL constituera la référence documentaire principale associée à cette animation.
-
-# Citation et réutilisation
-
-Si cette animation ou une partie substantielle de son code est utilisée, adaptée ou intégrée dans un travail scientifique, il est demandé de citer les travaux scientifiques associés ainsi que le présent dépôt.
-
-La référence définitive de citation du logiciel sera précisée dans le fichier "CITATION.cff" du dépôt.
-
-# Auteur
-
-KONÉ ZANA LEKPORO 
-
-# Version
-
-Version actuelle : 1.0
-
-Cette version correspond à la version publiée de l'animation interactive.
-
-# Évolution du projet
-
-Le dépôt pourra être mis à jour ultérieurement afin d'intégrer :
-
-- de nouvelles versions de l'animation;
-- des améliorations de l'interface;
-- des extensions aux résultats théoriques;
-- des programmes numériques associés aux travaux de recherche.
-
----
+The MIT License applies to the original source code and documentation contained in this repository. External resources, if any, remain subject to their respective licensing conditions.
